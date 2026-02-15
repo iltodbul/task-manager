@@ -30,48 +30,13 @@ jobs:
           npm install
           npx playwright install --with-deps chromium
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build API image for testing
-        uses: docker/build-push-action@v6
-        with:
-          platforms: linux/amd64
-          context: ./services/api
-          file: ./services/api/Dockerfile
-          push: false
-          load: true
-          tags: task-manager-api:test
-
-      - name: Build Archiver image for testing
-        uses: docker/build-push-action@v6
-        with:
-          platforms: linux/amd64
-          context: ./services/archiver
-          file: ./services/archiver/Dockerfile
-          push: false
-          load: true
-          tags: task-manager-archiver:test
-
-      - name: Build Monitor image for testing
-        uses: docker/build-push-action@v6
-        with:
-          platforms: linux/amd64
-          context: ./services/monitor
-          file: ./services/monitor/Dockerfile
-          push: false
-          load: true
-          tags: task-manager-monitor:test
-
-      - name: Build Frontend image for testing
-        uses: docker/build-push-action@v6
-        with:
-          platforms: linux/amd64
-          context: ./services/frontend
-          file: ./services/frontend/Dockerfile
-          push: false
-          load: true
-          tags: task-manager-frontend:test
+      - name: Pull service images from registry
+        run: |
+          # prefer registry images; fall back to local image names if not available
+          docker pull ${DOCKER_REGISTRY_URL}/task-manager-api:latest || true
+          docker pull ${DOCKER_REGISTRY_URL}/task-manager-monitor:latest || true
+          docker pull ${DOCKER_REGISTRY_URL}/task-manager-archiver:latest || true
+          docker pull ${DOCKER_REGISTRY_URL}/task-manager-frontend:latest || true
 
       - name: Create Docker network for tests
         run: |
@@ -84,25 +49,25 @@ jobs:
 
           # start redis
           docker run -d --name redis-db -p 6379:6379 --net task-net redis:latest
-          # start api
-          docker run -d --name api -p 5001:5000 --net task-net task-manager-api:test
+          # start api (use registry image if available)
+          docker run -d --name api -p 5001:5000 --net task-net ${DOCKER_REGISTRY_URL}/task-manager-api:latest || docker run -d --name api -p 5001:5000 --net task-net task-manager-api:test
           # start monitor
-          docker run -d --name monitor -p 5002:8080 --net task-net task-manager-monitor:test
-          # start frontend
-          docker run -d --name frontend -p 80:80 --net task-net task-manager-frontend:test
+          docker run -d --name monitor -p 5002:8080 --net task-net ${DOCKER_REGISTRY_URL}/task-manager-monitor:latest || docker run -d --name monitor -p 5002:8080 --net task-net task-manager-monitor:test
+          # start frontend (map to host 8080 to avoid privileged port conflicts)
+          docker run -d --name frontend -p 8080:80 --net task-net ${DOCKER_REGISTRY_URL}/task-manager-frontend:latest || docker run -d --name frontend -p 8080:80 --net task-net task-manager-frontend:test
           # start archiver (needs REDIS_HOST)
-          docker run -d --name archiver --net task-net -e REDIS_HOST=redis-db task-manager-archiver:test
+          docker run -d --name archiver --net task-net -e REDIS_HOST=redis-db ${DOCKER_REGISTRY_URL}/task-manager-archiver:latest || docker run -d --name archiver --net task-net -e REDIS_HOST=redis-db task-manager-archiver:test
           sleep 5
 
       - name: Run Smoke Tests
         run: |
           cd services/frontend/test
-          bash smoke_test.sh
+          HOST=localhost PORT=8080 bash smoke_test.sh
 
       - name: Run Playwright E2E Tests
         run: |
           cd services/frontend/test
-          npx playwright test test_ui.spec.js
+          TARGET_HOST=http://localhost TARGET_PORT=8080 npx playwright test test_ui.spec.js
 
       - name: Stop and remove test containers
         if: always()
