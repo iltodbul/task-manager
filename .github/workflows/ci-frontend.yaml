@@ -3,7 +3,7 @@ env:
   DOCKER_IMAGE_NAME: task-manager-frontend
 
 name: Task Manager Frontend Image
-run-name: ${{ gitea.actor }} is building the Frontend image
+run-name: ${{ github.actor }} is building the Frontend image
 on:
   push:
     branches: [main]

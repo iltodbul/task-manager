@@ -3,7 +3,7 @@ env:
   DOCKER_IMAGE_NAME: task-manager-archiver
 
 name: Task Manager Archiver Image
-run-name: ${{ gitea.actor }} is building the Archiver image
+run-name: ${{ github.actor }} is building the Archiver image
 on:
   push:
     branches: [main]

@@ -3,7 +3,7 @@ env:
   DOCKER_IMAGE_NAME: task-manager-monitor
 
 name: Task Manager Monitor Image
-run-name: ${{ gitea.actor }} is building the Monitor image
+run-name: ${{ github.actor }} is building the Monitor image
 on:
   push:
     branches: [main]

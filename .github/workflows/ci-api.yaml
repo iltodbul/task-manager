@@ -3,7 +3,7 @@ env:
   DOCKER_IMAGE_NAME: task-manager-api
 
 name: Task Manager API Image
-run-name: ${{ gitea.actor }} is building the API image
+run-name: ${{ github.actor }} is building the API image
 on:
   push:
     branches: [main]
