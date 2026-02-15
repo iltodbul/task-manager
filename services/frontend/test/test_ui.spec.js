@@ -1,11 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
-const TARGET_HOST = process.env.TARGET_HOST || 'http://localhost';
-const TARGET_PORT = process.env.TARGET_PORT || '80';
-const BASE_URL = TARGET_PORT ? `${TARGET_HOST}:${TARGET_PORT}` : TARGET_HOST;
-
 test('should create a task and see it in the list', async ({ page }) => {
-  await page.goto(BASE_URL);
+  await page.goto('http://localhost');
 
   // 1. Fill out the form
   await page.fill('#title', 'E2E Test Task');
