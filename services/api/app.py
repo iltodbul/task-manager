@@ -6,7 +6,7 @@ import os
 
 app = Flask(__name__)
 
-# Environment variables are a key DevOps concept for Session 4
+# Environment variables are a key DevOps concept for configuration.
 # We use 'redis-db' as the default hostname for Docker DNS
 REDIS_HOST = os.getenv('REDIS_HOST', 'redis-db')
 REDIS_PORT = os.getenv('REDIS_PORT', 6379)
