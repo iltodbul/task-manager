@@ -24,15 +24,46 @@ jobs:
         with:
           node-version: '20.20.0'
 
-      - name: Install dependencies
+      - name: Install test dependencies and Playwright
         run: |
           cd services/frontend/test
           npm install
+          npx playwright install --with-deps chromium
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image for testing
+      - name: Build API image for testing
+        uses: docker/build-push-action@v6
+        with:
+          platforms: linux/amd64
+          context: ./services/api
+          file: ./services/api/Dockerfile
+          push: false
+          load: true
+          tags: task-manager-api:test
+
+      - name: Build Archiver image for testing
+        uses: docker/build-push-action@v6
+        with:
+          platforms: linux/amd64
+          context: ./services/archiver
+          file: ./services/archiver/Dockerfile
+          push: false
+          load: true
+          tags: task-manager-archiver:test
+
+      - name: Build Monitor image for testing
+        uses: docker/build-push-action@v6
+        with:
+          platforms: linux/amd64
+          context: ./services/monitor
+          file: ./services/monitor/Dockerfile
+          push: false
+          load: true
+          tags: task-manager-monitor:test
+
+      - name: Build Frontend image for testing
         uses: docker/build-push-action@v6
         with:
           platforms: linux/amd64
@@ -42,10 +73,23 @@ jobs:
           load: true
           tags: task-manager-frontend:test
 
-      - name: Run Frontend container
+      - name: Create Docker network for tests
         run: |
-          docker run -d -p 80:80 --name frontend-test task-manager-frontend:test
-          sleep 2
+          docker network create task-net || true
+
+      - name: Start service containers
+        run: |
+          # start redis
+          docker run -d --name redis-db -p 6379:6379 --net task-net redis:latest
+          # start api
+          docker run -d --name api -p 5001:5000 --net task-net task-manager-api:test
+          # start monitor
+          docker run -d --name monitor -p 5002:8080 --net task-net task-manager-monitor:test
+          # start frontend
+          docker run -d --name frontend -p 80:80 --net task-net task-manager-frontend:test
+          # start archiver (needs REDIS_HOST)
+          docker run -d --name archiver --net task-net -e REDIS_HOST=redis-db task-manager-archiver:test
+          sleep 5
 
       - name: Run Smoke Tests
         run: |
@@ -57,11 +101,12 @@ jobs:
           cd services/frontend/test
           npx playwright test test_ui.spec.js
 
-      - name: Stop and remove container
+      - name: Stop and remove test containers
         if: always()
         run: |
-          docker stop frontend-test || true
-          docker rm frontend-test || true
+          docker stop frontend api monitor archiver redis-db || true
+          docker rm frontend api monitor archiver redis-db || true
+          docker network rm task-net || true
 
       - name: Upload test results
         if: always()
