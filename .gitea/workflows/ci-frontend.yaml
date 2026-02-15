@@ -79,6 +79,9 @@ jobs:
 
       - name: Start service containers
         run: |
+          # remove any leftover test containers from previous runs
+          docker rm -f redis-db api monitor frontend archiver || true
+
           # start redis
           docker run -d --name redis-db -p 6379:6379 --net task-net redis:latest
           # start api
