@@ -13,7 +13,29 @@ on:
   workflow_dispatch:
 
 jobs:
+  test-logic:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          cd services/api
+          pip install pytest redis flask
+
+      - name: Run Unit Tests
+        run: |
+          cd services/api
+          python3 -m pytest tests/test_app.py
+
   build-images:
+    needs: test-logic
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
