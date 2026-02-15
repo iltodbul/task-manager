@@ -59,15 +59,15 @@ jobs:
           docker run -d --name archiver --net task-net -e REDIS_HOST=redis-db ${DOCKER_REGISTRY_URL}/task-manager-archiver:latest || docker run -d --name archiver --net task-net -e REDIS_HOST=redis-db task-manager-archiver:test
           sleep 5
 
-      - name: Run Smoke Tests
+      - name: Run Smoke Tests (inside network)
         run: |
-          cd services/frontend/test
-          HOST=localhost PORT=8080 bash smoke_test.sh
+          # run the smoke script inside a node container attached to the test network
+          docker run --network task-net --rm -v "$PWD/services/frontend/test":/tests -w /tests node:20-bullseye /bin/bash -c "apt-get update -qq && apt-get install -y -qq curl grep && HOST=frontend PORT=80 bash smoke_test.sh"
 
-      - name: Run Playwright E2E Tests
+      - name: Run Playwright E2E Tests (inside network)
         run: |
-          cd services/frontend/test
-          TARGET_HOST=http://localhost TARGET_PORT=8080 npx playwright test test_ui.spec.js
+          # use Playwright official image (includes browsers) attached to test network
+          docker run --network task-net --rm -v "$PWD/services/frontend/test":/tests -w /tests mcr.microsoft.com/playwright:focal /bin/bash -lc "npx playwright test test_ui.spec.js --reporter=list"
 
       - name: Stop and remove test containers
         if: always()
