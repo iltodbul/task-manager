@@ -29,10 +29,46 @@ jobs:
           cd services/frontend/test
           npm install
 
-      - name: Run Unit Tests
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image for testing
+        uses: docker/build-push-action@v6
+        with:
+          platforms: linux/amd64
+          context: ./services/frontend
+          file: ./services/frontend/Dockerfile
+          push: false
+          load: true
+          tags: task-manager-frontend:test
+
+      - name: Run Frontend container
+        run: |
+          docker run -d -p 80:80 --name frontend-test task-manager-frontend:test
+          sleep 2
+
+      - name: Run Smoke Tests
         run: |
           cd services/frontend/test
-          npm test
+          bash smoke_test.sh
+
+      - name: Run Playwright E2E Tests
+        run: |
+          cd services/frontend/test
+          npx playwright test test_ui.spec.js
+
+      - name: Stop and remove container
+        if: always()
+        run: |
+          docker stop frontend-test || true
+          docker rm frontend-test || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: services/frontend/test/test-results/
 
   build-images:
     needs: test-logic
