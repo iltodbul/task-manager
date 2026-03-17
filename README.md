@@ -1,5 +1,6 @@
 # Task Manager
 
+## Project info
 This is a small educational microservices project used to practice CI/CD pipelines and GitHub Actions.
 
 Services
@@ -8,7 +9,7 @@ Services
 - frontend — Static web app (HTML/JS) served by Nginx.
 - monitor — Go service with unit tests and a Dockerfile.
 
-Purpose
+### Purpose
 - Serve as a training repository for building GitHub Actions workflows that run tests, build Docker images, and push them to a container registry.
 
 CI / CD
@@ -17,7 +18,7 @@ CI / CD
 	- `DOCKERHUB_USERNAME` — your Docker Hub username
 	- `DOCKERHUB_TOKEN` — a Docker Hub access token (recommended) or password
 
-Local development
+### Local development
 - api:
 	- Install dependencies: `pip install -r services/api/requirements.txt`
 	- Run tests: `python3 -m pytest services/api/tests/test_app.py`
@@ -26,6 +27,6 @@ Local development
 - monitor:
 	- Run tests: `cd services/monitor && go test ./...`
 
-Notes
+### Notes
 - Tests are (mostly) mocked for CI purposes; Redis is an external dependency for the project and may be required when running the full stack locally.
 - To publish images from CI, add the Docker Hub secrets in GitHub: Settings → Secrets and variables → Actions → New repository secret.
